@@ -3,13 +3,23 @@ if (!defined('_GNUBOARD_')) exit; // 개별 페이지 접근 불가
 
 // add_stylesheet('css 구문', 출력순서); 숫자가 작을 수록 먼저 출력됨
 add_stylesheet('<link rel="stylesheet" href="'.$member_skin_url.'/style.css">', 0);
+
+// SHH 성인인증 추가 시작 (24.11.08)
+if ($config['cf_cert_use'] && ($config['cf_cert_simple'] || $config['cf_cert_ipin'] || $config['cf_cert_hp']))
+    add_javascript('<script src="'.G5_JS_URL.'/certify.js?v='.G5_JS_VER.'"></script>', 0);
+// SHH 성인인증 추가 시작 (24.11.08)		
 ?>
 
 <div id="mb_login" class="mbskin">
-    <h1><?php echo $g5['title'] ?></h1>
+    <h1><?php echo $g5['title'] ?>/성인인증</h1> <!-- SHH 성인인증 (24.11.08) -->
 
     <form name="flogin" action="<?php echo $login_action_url ?>" onsubmit="return flogin_submit(this);" method="post" id="flogin">
     <input type="hidden" name="url" value="<?php echo $login_url ?>">
+
+<!-- SHH 성인인증 추가 시작 (24.11.08) -->
+		<input type="hidden" name="cert_type" value="<?php echo $member['mb_certify']; ?>">
+		<input type="hidden" name="cert_no" value="">
+<!-- SHH 성인인증 추가 끝 -->
 
     <div id="login_frm">
         <label for="login_id" class="sound_only">아이디<strong class="sound_only"> 필수</strong></label>
@@ -21,7 +31,7 @@ add_stylesheet('<link rel="stylesheet" href="'.$member_skin_url.'/style.css">', 
             <input type="checkbox" name="auto_login" id="login_auto_login" class="selec_chk">
             <label for="login_auto_login"><span></span> 자동로그인</label>
         </div>
-		<button type="submit" class="btn_submit">로그인</button>
+		<button type="submit" class="btn_submit">로그인</button>	
     </div>
 
     <?php
@@ -36,6 +46,21 @@ add_stylesheet('<link rel="stylesheet" href="'.$member_skin_url.'/style.css">', 
             <a href="<?php echo G5_BBS_URL ?>/register.php">회원 가입</a>
         </div>
     </section>
+
+<!-- SHH 성인인증 추가 시작 (24.11.08) -->
+    <section class="mb_login_join">
+<?php
+if($temp_auth != "Y" && !preg_match("/sw_direct/",$_SERVER['REQUEST_URI']) && !preg_match("/orderinquiry/",$_SERVER['REQUEST_URI'])) {
+	if($config['cf_cert_use']) {
+		if($config['cf_cert_ipin']) echo '<button type="button" id="win_ipin_cert" class="btn_frmline">아이핀 성인인증</button>'.PHP_EOL;
+		if($config['cf_cert_hp'])	echo '<button type="button" id="win_hp_cert_login" class="btn_submit btn-danger">비회원 성인인증</button>'.PHP_EOL;
+		echo '<noscript>성인인증을 위해서는 자바스크립트 사용이 가능해야합니다.</noscript>'.PHP_EOL;
+	}
+}
+?>	
+    </section>
+<!-- SHH 성인인증 추가 끝 -->
+
     </form>
 
 
@@ -55,10 +80,26 @@ add_stylesheet('<link rel="stylesheet" href="'.$member_skin_url.'/style.css">', 
         <div id="guest_privacy">
             <?php echo conv_content($default['de_guest_privacy'], $config['cf_editor']); ?>
         </div>
+				
+				<div class="chk_box">
+					<input type="checkbox" id="agree" value="1" class="selec_chk">									
+        	<label for="agree"><span></span> &nbsp;&nbsp;&nbsp;&nbsp;개인정보수집에 대한 내용을 읽었으며 동의합니다.</label>
+				</div>
 
-        <label for="agree">개인정보수집에 대한 내용을 읽었으며 이에 동의합니다.</label>
-        <input type="checkbox" id="agree" value="1">
-
+<!-- SHH 성인인증 추가 시작 (24.11.08) -->
+				<div>
+<?php
+if(!$_SESSION['ss_cert_no']) { 
+	if($config['cf_cert_use']) {
+		if($config['cf_cert_ipin']) echo '<button type="button" id="win_ipin_cert" class="btn_frmline">아이핀 성인인증</button>'.PHP_EOL;
+		if($config['cf_cert_hp'])	echo '<button type="button" id="win_hp_cert" class="btn_submit"><span style="font-size:14px">비회원 성인인증</span></button>'.PHP_EOL;
+		echo '<noscript>성인인증을 위해서는 자바스크립트 사용이 가능해야합니다.</noscript>'.PHP_EOL;
+	} 
+}
+?>
+				</div>
+<!-- SHH 성인인증 추가 끝 -->
+				
         <div class="btn_confirm">
             <a href="javascript:guest_submit(document.flogin);" class="btn_submit">비회원으로 구매하기</a>
         </div>
@@ -72,6 +113,14 @@ add_stylesheet('<link rel="stylesheet" href="'.$member_skin_url.'/style.css">', 
                     return;
                 }
             }
+
+<?php if(!$_SESSION['ss_cert_no']) { // SHH 성인인증 추가 시작 (24.11.08) ?>
+						if (f.cert_no.value=="") {
+							alert("성인인증 후에 구매가능합니다.");
+							return;
+						}
+<?php } // SHH 성인인증 추가 끝 ?>	
+	
             f.url.value = "<?php echo $url; ?>";
             f.action = "<?php echo $url; ?>";
             f.submit();
@@ -111,6 +160,105 @@ add_stylesheet('<link rel="stylesheet" href="'.$member_skin_url.'/style.css">', 
 
 <script>
 jQuery(function($){
+
+// SHH 성인인증 추가 시작 (24.11.08)
+<?php if(preg_match("/sw_direct/",$url)) { ?>
+  var pageTypeParam = "pageType=order_direct"; // 바로구매
+<?php } else { ?>
+  var pageTypeParam = "pageType=order_cart"; // 장바구니
+<?php } ?>
+
+<?php if($config['cf_cert_use'] && $config['cf_cert_simple']) { ?>
+	// 이니시스 간편인증
+	var url = "<?php echo G5_INICERT_URL; ?>/ini_request.php";
+	var type = "";    
+  var params = "";
+  var request_url = "";
+
+	$(".win_sa_cert").click(function() {
+		if(!cert_confirm()) return false;
+		type = $(this).data("type");
+		params = "?directAgency=" + type + "&" + pageTypeParam;
+        request_url = url + params;
+        call_sa(request_url);
+	});
+<?php } ?>
+	
+<?php if($config['cf_cert_use'] && $config['cf_cert_ipin']) { ?>
+	// 아이핀인증
+	var params = "";
+	$("#win_ipin_cert").click(function() {
+	if(!cert_confirm()) return false;
+			params = "?" + pageTypeParam;
+			var url = "<?php echo G5_OKNAME_URL; ?>/ipin1.php"+params;
+			certify_win_open('kcb-ipin', url);
+			return;
+	});
+
+<?php } ?>
+	
+<?php if($config['cf_cert_use'] && $config['cf_cert_hp']) { ?>
+	// 휴대폰인증
+	var params = "";
+	$("#win_hp_cert").click(function() {
+		if(!cert_confirm_flogin()) return false;
+	  params = "?" + pageTypeParam;
+ <?php     
+		switch($config['cf_cert_hp']) {
+			case 'kcb':                
+					$cert_url = G5_OKNAME_URL.'/hpcert1.php';
+					$cert_type = 'kcb-hp';
+					break;
+			case 'kcp':
+					$cert_url = G5_KCPCERT_URL.'/kcpcert_form.php';
+					$cert_type = 'kcp-hp';
+					break;
+			case 'lg':
+					$cert_url = G5_LGXPAY_URL.'/AuthOnlyReq.php';
+					$cert_type = 'lg-hp';
+					break;
+			default:
+					echo 'alert("기본환경설정에서 휴대폰 본인확인 설정을 해주십시오");';
+					echo 'return false;';
+					break;
+    }
+?>
+       
+		certify_win_open("<?php echo $cert_type; ?>", "<?php echo $cert_url; ?>"+params);
+		return;
+	});
+
+	$("#win_hp_cert_login").click(function() {
+		if(!cert_confirm_flogin()) return false;
+    var pageTypeParam = "pageType=auth"; // 성인인증
+	  params = "?" + pageTypeParam;
+ <?php     
+		switch($config['cf_cert_hp']) {
+			case 'kcb':                
+					$cert_url = G5_OKNAME_URL.'/hpcert1.php';
+					$cert_type = 'kcb-hp';
+					break;
+			case 'kcp':
+					$cert_url = G5_KCPCERT_URL.'/kcpcert_form.php';
+					$cert_type = 'kcp-hp';
+					break;
+			case 'lg':
+					$cert_url = G5_LGXPAY_URL.'/AuthOnlyReq.php';
+					$cert_type = 'lg-hp';
+					break;
+			default:
+					echo 'alert("기본환경설정에서 휴대폰 본인확인 설정을 해주십시오");';
+					echo 'return false;';
+					break;
+    }
+?>
+       
+		certify_win_open("<?php echo $cert_type; ?>", "<?php echo $cert_url; ?>"+params);
+		return;
+	});
+<?php } ?>
+// SHH 성인인증 추가 끝
+
     $("#login_auto_login").click(function(){
         if (this.checked) {
             this.checked = confirm("자동로그인을 사용하시면 다음부터 회원아이디와 비밀번호를 입력하실 필요가 없습니다.\n\n공공장소에서는 개인정보가 유출될 수 있으니 사용을 자제하여 주십시오.\n\n자동로그인을 사용하시겠습니까?");
