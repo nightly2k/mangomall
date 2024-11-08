@@ -82,8 +82,10 @@ if($temp_auth != "Y" && !preg_match("/sw_direct/",$_SERVER['REQUEST_URI']) && !p
         </div>
 				
 				<div class="chk_box">
+<!-- SHH 성인인증 추가 시작 (24.11.08) -->				
 					<input type="checkbox" id="agree" value="1" class="selec_chk">									
         	<label for="agree"><span></span> &nbsp;&nbsp;&nbsp;&nbsp;개인정보수집에 대한 내용을 읽었으며 동의합니다.</label>
+<!-- SHH 성인인증 추가 끝 -->					
 				</div>
 
 <!-- SHH 성인인증 추가 시작 (24.11.08) -->
