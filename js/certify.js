@@ -125,6 +125,33 @@ function cert_confirm() {
         return false;
 }
 
+// SHH 성인인증 추가 시작 (24.11.08)
+function cert_confirm_flogin() {
+        
+    var type;
+    var val = document.flogin.cert_type.value;
+
+    switch(val) {
+        case "simple":
+            type = "간편인증";
+            break;
+        case "ipin":
+            type = "아이핀";
+            break;
+        case "hp":
+            type = "휴대폰";
+            break;
+        default:
+            return true;
+    }
+
+    if(confirm("이미 "+type+"으로 성인인증을 완료하셨습니다.\n\n이전 인증을 취소하고 다시 인증하시겠습니까?"))
+        return true;
+    else
+        return false;
+}
+// SHH 성인인증 추가 끝
+
 function call_sa(url) {   
     let window = popup_center();
     if(window != undefined && window != null) {
